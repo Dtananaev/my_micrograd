@@ -155,6 +155,10 @@ class Neuron:
         self.w  = [Value(random.uniform(-1,1)) for _ in range(nin)]
         self.b = Value(random.uniform(-1,1))
 
+
+    def parameters(self):
+        return self.w + [self.b]
+
     def __call__(self, x):
 
 
@@ -166,6 +170,9 @@ class Layer:
 
     def __init__(self, nin, nout):
         self.neurons = [Neuron(nin) for _ in range(nout)]
+
+    def parameters(self):
+        return [p for neuron in self.neurons for p in neuron.parameters()]
 
     def __call__(self, x):
         outs = [n(x) for n in self.neurons]
@@ -180,6 +187,9 @@ class MLP:
 
         self.layers  = [Layer(sz[i], sz[i+1]) for i in range(len(nouts))]
 
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
 
     def __call__(self, x):
 
@@ -263,3 +273,34 @@ if __name__ == "__main__":
     print(f"MLP {n(x)}")
     dot = draw_dot(f)
     dot.render("MLP", format="png")
+
+
+    # DATASET
+
+    xs = [
+        [2.0, 3.0, -1.0],
+    [3.0, -1.0, 0.5],
+    [0.5, 1.0, 0.5],
+    [1.0, 1.0, -1.0]
+
+    ]
+
+    ys = [1.0, -1.0, -1.0, 1.0]
+
+    # Training loop
+    for k in range(20):
+        ypred = [n(x) for x in xs]
+
+        loss = sum([(ypd -ygt)**2 for ygt, ypd in zip(ys, ypred)])
+
+        # Make zero grad
+        for p in n.parameters():
+            p.grad = 0.0
+        # Compute backward
+        loss.backward()
+
+        # Update
+        for p in n.parameters():
+            p.data += -0.05 * p.grad
+        
+        print(f"k {k}, loss {loss.data}")
